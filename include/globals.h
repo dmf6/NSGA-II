@@ -7,10 +7,10 @@
 #include <iostream>
 
 /*popsize must be a multiple of 4 */
-#define POP_SIZE 400
+#define POP_SIZE 1200
 #define NUM_PARS 1
 #define NUM_OBJS 2
-#define NUM_GEN 100
+#define NUM_GEN 200
 #define NUM_CON 0
 
 #define INF 1.0e14                              
@@ -20,7 +20,7 @@
 /* mutation distribution index between 5 and 50 */
 #define ETA_M 20
 #define P_CROSS 0.9
-#define P_MUT 0.5
+#define P_MUT 0.9
 
 #define NUM_THREADS 16
 /* 16 threads working on a poopulation of size 400 means that each

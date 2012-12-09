@@ -1,6 +1,6 @@
 SHELL = /bin/sh
 CC = g++
-LIBS = -lm  -lboost_random -lPocoFoundation -lpthread -std=c++0x -L/usr/local/qwt-6.0.2/lib -lqwt -lQtGui -lQtCore -lQt3Support -lQtOpenGL
+LIBS = -lm  -lboost_random -lPocoFoundation -lpthread -std=c++0x -lQtGui -lQtCore -lQt3Support
 CPPFLAGS = -g -O2 -Wall
 
 VPATH=%.h ./include

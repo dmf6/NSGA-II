@@ -16,9 +16,11 @@ double* Population::max_var = new double[NUM_PARS];
 int main(int argc, char *argv[]) {
         /* GUI STUFF */
     QApplication app( argc, argv );
+    
     Window widget;
-    widget.setWindowTitle(QT_TRANSLATE_NOOP(QGraphicsView, "Popup Message with Effect"));
-        //widget.setFixedSize(400, 600);
+    widget.setWindowTitle(QT_TRANSLATE_NOOP(QGraphicsView, "My Qt drawing canvas"));
+    widget.drawRectangle();
+    
     widget.show();
          
      
@@ -69,7 +71,7 @@ int main(int argc, char *argv[]) {
           mixed_pop->generateNewParent(parent_pop);
       }
 
-          //  cout << "Generations finished, now sending solutions to final_pop.dat" << endl;
+          //cout << "Generations finished, now sending solutions to final_pop.dat" << endl;
 
 
     /* print parameters */
@@ -83,9 +85,9 @@ int main(int argc, char *argv[]) {
     parent_pop->printObjectives(os2);
     os2.close();
     
-    delete parent_pop;
-    delete child_pop;
-    delete mixed_pop;
+    // delete parent_pop;
+    // delete child_pop;
+    // delete mixed_pop;
 
     return app.exec();
 }

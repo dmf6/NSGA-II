@@ -89,6 +89,8 @@ void Population::evaluate() {
 void Population::nondominated_sort() {
         //clear fronts list for the current generation
     fronts.clear();
+    numFronts = 0;
+    
     vector< Individual *> front;    /* first front */
     int *indices = new int[_popsize];
     int icount = 0;
@@ -304,16 +306,27 @@ void Population::select (Population *new_pop) {
          * population size, the more unlikely this is. */
     random_shuffle ( a1.begin(), a1.end() );
     random_shuffle ( a2.begin(), a2.end() );
+    int randIdx = 0;
     
-        /* let the parents fight it out to get it on */
+        /* let the parents fight it out to get it on but don't let them mate with themselves */
     for(int k = 0; k < _popsize; k+=4) {
         parent1 = tournament(ind[a1[k]], ind[a1[k+1]]);
         parent2 = tournament(ind[a1[k+2]], ind[a1[k+3]]);
-        // SBX Crossover
+        while (parent1 == parent2) {
+            randIdx = rand->nextInt(0, _popsize);
+            parent2 = tournament(ind[a1[k+2]], ind[a1[randIdx]]);
+        }
+         // SBX Crossover
         sbxCrossover (parent1, parent2, new_pop->ind[k], new_pop->ind[k+1]);
+        
         parent1 = tournament(ind[a2[k]], ind[a2[k+1]]);
         parent2 = tournament(ind[a2[k+2]], ind[a2[k+3]]);
-        //SBX Crossover
+    
+        while (parent1 == parent2) {
+            randIdx = rand->nextInt(0, _popsize);
+            parent2 = tournament(ind[a2[k+2]], ind[a2[randIdx]]);
+        }
+            //SBX Crossover
         sbxCrossover (parent1, parent2, new_pop->ind[k+2], new_pop->ind[k+3]);
     }
 }
@@ -449,57 +462,63 @@ void Population::merge(Population *pop1, Population *pop2) {
         /* remember mixed pop is twice the size as parent and child pop */
     for (int i = 0; i < pop1->_popsize; i++) {
     //     /* copy individuals into new mixed population */
-        ind[i]->copy(pop1->ind[i]);
+            //ind[i]->copy(pop1->ind[i]);
+       ind[i] = pop1->ind[i];
+        
     }     
         /*copy child population into positions popsize-2*popsize */
-    for (int i = 0, j = pop2->_popsize; j < _popsize; i++, j++) {
-        ind[j]->copy( pop2->ind[i]);
+    for (int j = 0, k = pop2->_popsize; k < _popsize; j++, k++) {
+            //ind[k]->copy( pop2->ind[j]);
+        ind[k] = pop2->ind[j];
+        
     }   
 }
 
 void Population::mutate_pop() {
     for (int i=0; i<_popsize; i++) {
             /* need to pass in lower and upper limit to polynomial mutation function */
-        ind[i]->mutate(min_var, max_var);
+        ind[i]->mutate(rand, min_var, max_var);
     }
 }
     
 void Population::generateNewParent(Population *parent) {
     int frontCounter = 1;
     int j = 0;
-
     int currentSize = 0;
     
     vector<Individual *> front;
    /* we loop through the population checking the rank of the individuals and filling a vector containing these individuals that have the same rank */
+    
     while (frontCounter <= numFronts) {
-        if (j < _popsize) {
+        while (j < _popsize) {
             if(ind[j]->rank == frontCounter) {
                 front.push_back(ind[j]);
                 j++;
             }
             else {
                     //cout << "I HAVE ONE FRONT OF SIZE " << front.size() << "\n";
-                front.clear();
                 frontCounter++;
-            }
-            if (currentSize + front.size() < parent->_popsize) {
-                // for (int p = currentSize, q =0 ; q < (int) front.size(); q++, p++) {
-                //     parent->ind[p]->copy(front[q]);
-                // }
-                    // update the current size of the new parent
-                currentSize += front.size();
-            }
-            else {
-                    //sort(front.begin(), front.end(), compareDistance);
-                // for (int m =0, n = currentSize; n < parent->_popsize; m++, n++) {
-                //     parent->ind[n]->copy(front[m]);
-                // }
                 break;
             }
         }
-    }   
-}
+        if (currentSize + front.size() < parent->_popsize) {
+            for (int p = currentSize, q =0 ; q < (int) front.size(); q++, p++) {
+                parent->ind[p]->copy(front[q]);
+            }
+                // update the current size of the new parent
+            currentSize += front.size();
+            front.clear();
+        }
+        else {
+            sort(front.begin(), front.end(), compareDistance);
+            for (int m =0, n = currentSize; n < parent->_popsize; m++, n++) {
+                parent->ind[n]->copy(front[m]);
+            }
+            break;
+        }
+    }
+}   
+
 
 
  void Population::readLimits(ifstream & ifs) {

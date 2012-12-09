@@ -23,12 +23,11 @@ using namespace std;
 using namespace boost;
 
 class Population {
-  
   public:
         //vector<IndPtr> ind;
     static double *min_var;
     static double *max_var;
-     Individual **ind;
+    Individual **ind;
     int _popsize;
     int nreal;    /* number of real paramaters */
     int nobj; /* number of objective functions */

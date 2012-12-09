@@ -19,8 +19,6 @@ Individual::Individual(int nreal, int nobj, int ncon) {
     memset(constr, 0.0, ncon);
    
     this->ncon = ncon;
-    rand = new Random();
-    rand->setSeed(static_cast<unsigned int>(time(0)));
     crowding_distance = 0;
     constr_violation = 0;
     rank = 0;
@@ -32,14 +30,12 @@ Individual::~Individual() {
     delete [] objs;
     delete [] xreal;
     delete [] constr;
-    delete rand;
 }
 
 void Individual::initialize(Random *rand, double *min, double *max) {
     double ran;
     for (int j=0; j<numvars; j++) {
         ran= rand->nextDouble(min[j], max[j]);
-            //cout << ran << "\n";
         vars[j] = ran;
     }
 }
@@ -127,11 +123,13 @@ int Individual::checkDominance(Individual *another) {
 
 
 // /* Routine for real polynomial mutation of an individual */
-void Individual::mutate(double *min_var, double *max_var) {
+void Individual::mutate(Random *rand, double *min_var, double *max_var) {
     double rnd, delta1, delta2, mut_pow, deltaq;
     double y, yl, yu, val, xy;
+    
     for (int j=0; j<NUM_PARS; j++) {
-        if (rand->nextDouble(0, 1) <= P_MUT) {
+        rnd= rand->nextDouble(0, 1);
+        if ( rnd <= P_MUT) {
             y = vars[j];
             yl = min_var[j];
             yu = max_var[j];
@@ -232,25 +230,19 @@ void Individual::simulate(int id) {
     zfstats.close();        
 }
 
-void Individual::copy(Individual *ind) {
+void Individual::copy(Individual *ind1) {
+    this->rank = ind1->rank;
+    this->constr_violation = ind1->constr_violation;
+    this->crowding_distance = ind1->crowding_distance;
     for (int i = 0; i < NUM_PARS; i++) {
-        vars[i] = ind->vars[i];
+        this->vars[i] = ind1->vars[i];
     }
     for (int j = 0; j < NUM_OBJS; j++) {
-        objs[j] = ind->objs[j];
-        xreal[j] = ind->xreal[j];
+        this->objs[j] = ind1->objs[j];
     }
     for (int k = 0; k < NUM_CON; k++) {
-        constr[k] = ind->constr[k];
+        this->constr[k] = ind1->constr[k];
     }
-    crowding_distance = ind->crowding_distance;
-    constr_violation = ind->constr_violation;
-    nobj = ind->nobj;
-    numvars = ind->numvars;
-    ncon = ind->ncon;
-    rank =ind->rank;
-    ndom = ind->ndom;
-    
 }
 
 

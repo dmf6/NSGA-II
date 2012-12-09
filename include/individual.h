@@ -22,7 +22,6 @@ class Individual {
     int ndom;    // domination count
     vector<Individual *> ss; // set of solutions dominated by this solution
     
-    Random *rand;
     double constr_violation;
     int index;
     
@@ -31,7 +30,7 @@ class Individual {
     void initialize(Random *rand, double *, double *);
     void evaluate();
     int checkDominance(Individual *);
-    void mutate(double *, double *);
+    void mutate(Random *rand, double *, double *);
     void simulate(int id);
     void copy(Individual *);
 };
