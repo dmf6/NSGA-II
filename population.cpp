@@ -1,4 +1,5 @@
 #include "population.h"
+#include <map>
 
 int Population::ncross = 0;
 
@@ -89,14 +90,12 @@ void Population::evaluate() {
 void Population::nondominated_sort() {
         //clear fronts list for the current generation
     fronts.clear();
-    numFronts = 0;
-    
     vector< Individual *> front;    /* first front */
     int *indices = new int[_popsize];
     int icount = 0;
-    // cout << "The population size is " << _popsize << endl;
-    int flag = 0;
-
+    
+     int flag = 0;
+    
     for (int p = 0; p < _popsize; p++) {
         Individual *ind_p = ind[p];
         for (int q = 0; q < _popsize; q++) {
@@ -122,10 +121,12 @@ void Population::nondominated_sort() {
                 /* store index of element too, first front element indices come first obviously */
             indices[icount++] = ind_p->index;
         }
-        
     }
     /* store first front */
     fronts.push_back(front);
+    
+    assignCrowdingDistance(indices, 0, front.size());
+    
     int start = front.size();
     
     numFronts = 1; //representing the first front
@@ -144,7 +145,7 @@ void Population::nondominated_sort() {
                         //cout << "domination count for individual with idx " << qi->index  << " is " << qi->ndom << endl;
                     qi->rank = numFronts + 1;
                     q.push_back(qi);
-                 
+                        //cout << "The number of individuals in q is " << q.size() << "\n";
                         /* store index of individual whose domination
                            count has reached 0. This individual will
                            not be visited again */
@@ -155,17 +156,16 @@ void Population::nondominated_sort() {
         }
       
         if (!q.empty()) {
-            numFronts++; //increment i to identify the next front
             fronts.push_back(q);
                 /* assign crowding distance in current front */
-            assignCrowdingDistance(indices, start, q.size()-1);
+            assignCrowdingDistance(indices, start, q.size());
             start = start + q.size();
+            numFronts++; //increment i to identify the next front
         }
         front.swap(q);
-         
     }
     qsortOnRank(0, _popsize-1);
-
+     
     cout << "FINISHED NON-DOMINATED SORTING WITH " << numFronts << "sets\n";
     delete [] indices;
 }
@@ -290,46 +290,110 @@ void Population::swap( int *array, int a, int b ) {
     array[ b ] = temp;
 }
 
+
 void Population::select (Population *new_pop) {
         /* need to initialize before using */
-    Individual *parent1 = NULL;
-    Individual *parent2 = NULL;
-
+    Individual *parent11 = NULL;
+    Individual *parent12 = NULL;
+    
     vector<int> a1(_popsize);
-    vector<int> a2(_popsize);
+    // vector<int> a2(_popsize);
     
     for (int i=0; i<_popsize; i++) {
-        a1[i] = a2[i] = i;
+        a1[i] = i;
     }
         /* shuffle to ensure the same individual doesn't mate with
          * itself. There is still a chance but the higher the
          * population size, the more unlikely this is. */
     random_shuffle ( a1.begin(), a1.end() );
-    random_shuffle ( a2.begin(), a2.end() );
-    int randIdx = 0;
+    // random_shuffle ( a2.begin(), a2.end() );
+    double randIdx1, randIdx2 = 0;
     
         /* let the parents fight it out to get it on but don't let them mate with themselves */
-    for(int k = 0; k < _popsize; k+=4) {
-        parent1 = tournament(ind[a1[k]], ind[a1[k+1]]);
-        parent2 = tournament(ind[a1[k+2]], ind[a1[k+3]]);
-        while (parent1 == parent2) {
-            randIdx = rand->nextInt(0, _popsize);
-            parent2 = tournament(ind[a1[k+2]], ind[a1[randIdx]]);
-        }
-         // SBX Crossover
-        sbxCrossover (parent1, parent2, new_pop->ind[k], new_pop->ind[k+1]);
+    int count = 0;
+
+        // keep a temp vector of individuals chosen to be parents
+    map<Individual *, Individual *> parents;
+
+     randIdx1 = rand->nextInt(0, a1.size()-1);
+     randIdx2 = rand->nextInt(0, a1.size()-1);
         
-        parent1 = tournament(ind[a2[k]], ind[a2[k+1]]);
-        parent2 = tournament(ind[a2[k+2]], ind[a2[k+3]]);
-    
-        while (parent1 == parent2) {
-            randIdx = rand->nextInt(0, _popsize);
-            parent2 = tournament(ind[a2[k+2]], ind[a2[randIdx]]);
-        }
-            //SBX Crossover
-        sbxCrossover (parent1, parent2, new_pop->ind[k+2], new_pop->ind[k+3]);
-    }
+     parent11 = tournament(ind[a1[randIdx1]], ind[a1[randIdx2]]);
+     parent12 = tournament(ind[a1[randIdx1]], ind[a1[randIdx2]]);
+     while (parent11 == parent12) {
+         cout << "HELLO2\n";
+         randIdx1 = rand->nextInt(0, a1.size()-1);
+         randIdx2 = rand->nextInt(0, a1.size()-1);
+         parent12 = tournament(ind[a1[randIdx1]], ind[a1[randIdx2]]);
+     }
+         /* remember these two parents */
+     parents[parent11] = parent12;
+         /*crossover ONCE */
+     sbxCrossover (parent11, parent12, new_pop->ind[count], new_pop->ind[count+1]);
+     count = count + 2;
+
+     cout << "PARENTS ADDED " << parent11->index << " " << parent12->index << "\n";
+     cout << count << ":RESPECTIVE RANK AND CROWDING DISTANCE " << parent11->rank << " " << parent11->crowding_distance << " " <<  parent12->rank << " " << parent12->crowding_distance << "\n";
+     while (count < _popsize) {
+         cout << "HELLO1\n";
+         
+         randIdx1 = rand->nextInt(0, a1.size()-1);
+         randIdx2 = rand->nextInt(0, a1.size()-1);
+        
+         parent11 = tournament(ind[a1[randIdx1]], ind[a1[randIdx2]]);
+         parent12 = tournament(ind[a1[randIdx1]], ind[a1[randIdx2]]);
+         cout << parent11->index << " " << parent12->index << "\n";
+             /* we want distinct parents */
+       
+             /* if parent 1 is not already in the list then add */
+         if (parents.find(parent11) == parents.end()) {
+             while ((parents.find(parent12) != parents.end() || (parent11 == parent12))) {
+                 randIdx1 = rand->nextInt(0, a1.size()-1);
+                 randIdx2 = rand->nextInt(0, a1.size()-1);
+                 parent12 = tournament(ind[a1[randIdx1]], ind[a1[randIdx2]]);
+             }
+             cout << count <<":PARENTS ADDED " << parent11->index << " " << parent12->index << "\n";
+             cout << "RESPECTIVE RANK AND CROWDING DISTANCE " << parent11->rank << " " << parent11->crowding_distance << " " <<  parent12->rank << " " << parent12->crowding_distance << "\n";
+             
+             cout << "HELLO3\n";
+             parents[parent11] = parent12;
+             sbxCrossover (parent11, parent12, new_pop->ind[count], new_pop->ind[count+1]);
+             count = count + 2;
+         }
+         else {
+             while ((parents.find(parent11)->first) == parent11) {
+                 cout << "HELLO4\n";
+                 cout << parent11->index << " " << parent12->index << "\n";
+                 randIdx1 = rand->nextInt(0, a1.size()-1);
+                 randIdx2 = rand->nextInt(0, a1.size()-1);
+                 parent11 = tournament(ind[a1[randIdx1]], ind[a1[randIdx2]]);
+             }
+             
+            
+            /* if parent11 has already fought with parent12 then choose another parent12*/
+             while (((parents.find(parent11)->second) == parent12) || ((parents.find(parent11)->first) == parent12) || (parent11 == parent12)) {
+                    // keep parent11 but change parent12 because we
+                    // have see parent11 but we just want to let it
+                    // fight with another individual, notice that it
+                    // could still dominate another individual and so
+                    // will get passed on twice */
+                randIdx2 = rand->nextInt(0, a1.size()-1);
+                parent12 = tournament(parent11, ind[a1[randIdx2]]);
+                cout << parent11->index << " " << parent12->index << "\n";
+            }
+             
+            parents[parent11] = parent12;
+                /* If we have reached this point then these two
+                 * parents have never mated before and they are not
+                 * the same */
+            sbxCrossover (parent11, parent12, new_pop->ind[count], new_pop->ind[count+1]);
+            count = count + 2;
+            cout << "PARENTS ADDED! " << parent11->index << " " << parent12->index << "\n";
+            cout << count << ":RESPECTIVE RANK AND CROWDING DISTANCE " << parent11->rank << " " << parent11->crowding_distance << " " <<  parent12->rank << " " << parent12->crowding_distance << "\n";
+         }
+     }
 }
+
 
 Individual* Population::tournament (Individual *ind1, Individual *ind2) {
     double crowd1 = ind1->crowding_distance;
@@ -433,8 +497,6 @@ void Population::sbxCrossover (Individual *parent1, Individual *parent2, Individ
                 child1->vars[i] = parent1->vars[i];
                 child2->vars[i] = parent2->vars[i];
             }
-            
-        
         }
     }
     else {
@@ -445,80 +507,77 @@ void Population::sbxCrossover (Individual *parent1, Individual *parent2, Individ
     }
 }
 
-void Population::simulate() {
-        /* Parallel implementation */
-      vector<Poco::Runnable *> runnables;
-        for (int i = 0, j = 0; i < NUM_THREADS; i++, j+=NUM_SIMS) {
-            runnables.push_back(new Worker(i, &lock, j, j+NUM_SIMS, this));
-        }
-        foreach( Poco::Runnable *run, runnables) {
-            pool.start(*run);
-        }
-        pool.joinAll();
-}
+// void Population::simulate() {
+//         /* Parallel implementation */
+//       vector<Poco::Runnable *> runnables;
+//         for (int i = 0, j = 0; i < NUM_THREADS; i++, j+=NUM_SIMS) {
+//             runnables.push_back(new Worker(i, &lock, j, j+NUM_SIMS, this));
+//         }
+//         foreach( Poco::Runnable *run, runnables) {
+//             pool.start(*run);
+//         }
+//         pool.joinAll();
+// }
 
 void Population::merge(Population *pop1, Population *pop2) {
         /* copy parent population into positions 1-popsize */
         /* remember mixed pop is twice the size as parent and child pop */
     for (int i = 0; i < pop1->_popsize; i++) {
     //     /* copy individuals into new mixed population */
-            //ind[i]->copy(pop1->ind[i]);
-       ind[i] = pop1->ind[i];
-        
+        ind[i]->copy(pop1->ind[i]);
     }     
         /*copy child population into positions popsize-2*popsize */
-    for (int j = 0, k = pop2->_popsize; k < _popsize; j++, k++) {
-            //ind[k]->copy( pop2->ind[j]);
-        ind[k] = pop2->ind[j];
-        
-    }   
+    for (int i = 0, j = pop2->_popsize; j < _popsize; i++, j++) {
+        ind[j]->copy( pop2->ind[i]);
+    }
 }
 
 void Population::mutate_pop() {
     for (int i=0; i<_popsize; i++) {
             /* need to pass in lower and upper limit to polynomial mutation function */
-        ind[i]->mutate(rand, min_var, max_var);
+        ind[i]->mutate(min_var, max_var);
     }
 }
     
 void Population::generateNewParent(Population *parent) {
     int frontCounter = 1;
     int j = 0;
+
     int currentSize = 0;
-    
-    vector<Individual *> front;
-   /* we loop through the population checking the rank of the individuals and filling a vector containing these individuals that have the same rank */
-    
-    while (frontCounter <= numFronts) {
-        while (j < _popsize) {
+
+    while(frontCounter < numFronts) {
+        vector<Individual *> front;
+        front.clear();
+        while(j < parent->_popsize) {
             if(ind[j]->rank == frontCounter) {
                 front.push_back(ind[j]);
                 j++;
             }
             else {
-                    //cout << "I HAVE ONE FRONT OF SIZE " << front.size() << "\n";
                 frontCounter++;
                 break;
             }
         }
-        if (currentSize + front.size() < parent->_popsize) {
+        if (currentSize + (int) front.size() < parent->_popsize) {
+                //cout << "Front size is " << currentSize << "\n";
             for (int p = currentSize, q =0 ; q < (int) front.size(); q++, p++) {
                 parent->ind[p]->copy(front[q]);
             }
-                // update the current size of the new parent
-            currentSize += front.size();
-            front.clear();
+            
+            currentSize += front.size(); 
         }
         else {
             sort(front.begin(), front.end(), compareDistance);
+    
             for (int m =0, n = currentSize; n < parent->_popsize; m++, n++) {
                 parent->ind[n]->copy(front[m]);
             }
             break;
         }
+        
     }
-}   
-
+    
+}
 
 
  void Population::readLimits(ifstream & ifs) {
