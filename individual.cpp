@@ -243,6 +243,8 @@ void Individual::copy(Individual *ind1) {
     for (int k = 0; k < NUM_CON; k++) {
         this->constr[k] = ind1->constr[k];
     }
+    this->ndom = 0;
+    this->ss.clear();
 }
 
 

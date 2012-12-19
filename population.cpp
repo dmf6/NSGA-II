@@ -535,7 +535,7 @@ void Population::merge(Population *pop1, Population *pop2) {
 void Population::mutate_pop() {
     for (int i=0; i<_popsize; i++) {
             /* need to pass in lower and upper limit to polynomial mutation function */
-        ind[i]->mutate(min_var, max_var);
+        ind[i]->mutate(rand, min_var, max_var);
     }
 }
     
