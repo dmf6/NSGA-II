@@ -44,7 +44,7 @@ void Individual::evaluate() {
         // vars is the parameter array
         //xreal is the objective measurement
         //costfunc(&xreal[0], &objs[0], &constr[0]);
-    costfunc(vars, objs, constr);
+    costfunc(&vars[0], objs, constr);
         //cout << "Objective values are " << objs[0] << " " << objs[1] << endl;
     constr_violation = 0.0;
     for (int j=0; j<ncon; j++) {
@@ -242,6 +242,9 @@ void Individual::copy(Individual *ind1) {
     }
     for (int k = 0; k < NUM_CON; k++) {
         this->constr[k] = ind1->constr[k];
+    }
+    for (int k = 0; k < NUM_OBJS; k++) {
+        this->xreal[k] = ind1->xreal[k];
     }
     this->ndom = 0;
     this->ss.clear();
