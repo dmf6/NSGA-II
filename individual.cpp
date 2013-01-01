@@ -243,7 +243,7 @@ void Individual::copy(Individual *ind1) {
     for (int k = 0; k < NUM_CON; k++) {
         this->constr[k] = ind1->constr[k];
     }
-    for (int k = 0; k < NUM_OBJS; k++) {
+    for (int k = 0; k < NUM_OBJS; k++) { //This should be NUM_PARS, for the test problem this was correct but not for real-world
         this->xreal[k] = ind1->xreal[k];
     }
     this->ndom = 0;
